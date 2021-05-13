@@ -8,7 +8,8 @@ from vision.utils.misc import Timer
 import cv2
 import sys
 import sendRealDB 
-import threading
+import serial
+port = serial.Serial("/dev/ttyACM0", baudrate=9600)
 
 if len(sys.argv) < 5:
     #print('Usage: python run_ssd_example.py <net type>  <model path> <label path> [video file]')
@@ -61,14 +62,12 @@ else:
     sys.exit(1)
 
 
-timer = Timer()
 while True:
     try:
         ret, orig_image = cap.read()
         if orig_image is None:
             continue
         image = cv2.cvtColor(orig_image, cv2.COLOR_BGR2RGB)
-        timer.start()
         boxes, labels, probs = predictor.predict(image, 10, 0.4)
         #print('Time: {:.2f}s, Detect Objects: {:d}.'.format(interval, labels.size(0)))
         for i in range(boxes.size(0)):
@@ -76,9 +75,8 @@ while True:
             split_val=label.split(sep=":",maxsplit=2)
             prob =float(split_val[1])
             if(class_names[labels[i]]=='person' and prob>=float(threshold)):
-                print(class_names[labels[i]])
-                print("aa",prob)
                 cv2.imwrite('imagen.jpeg', orig_image, [cv2.IMWRITE_JPEG_QUALITY, 50])
                 sendRealDB.sendDataFireBase('imagen.jpeg')
+                port.write(b"D\n")
     except Exception as e:
         print(e)
